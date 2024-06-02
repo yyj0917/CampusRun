@@ -2,6 +2,8 @@
 #include <GLFW/glfw3.h>
 #include <cmath>
 #include <vector>
+#include <algorithm>
+
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -16,7 +18,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include "Player.h"
+#include "HumanItem.h"
 #include <mass.h>
+#include "SpinItem.h"
 
 // FUNCTION PROTOTYPES
 GLFWwindow *glAllInit();
@@ -24,6 +28,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 //void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void ModelLoading();
 
 
 // Custom Functions
@@ -42,6 +47,10 @@ void PlayParticleAtIndex(int index);
 
 // All GameObjects
 vector<GameObject*> GameObjects;
+// Preloading
+vector<HumanItem*> ProfessorPool;
+vector<HumanItem*> GirlFriendPool;
+vector<SpinItem*> SojuPool;
 
 // Eat Particles
 vector<vector<Mass*>> ParticleVector;
@@ -82,11 +91,19 @@ float lastFrame = 0.0f;
 
 // Input Models
 Player* player;
-string player_vs = sourceDirStr + "/player.vs";
-string player_fs = sourceDirStr + "/player.fs";
-string playerModelPath = modelDirStr + "/FastRun/FastRun.dae";
+string human_vs = sourceDirStr + "/human.vs";
+string human_fs = sourceDirStr + "/human.fs";
 string particle_vs = sourceDirStr + "/particle.vs";
 string particle_fs = sourceDirStr + "/particle.fs";
+string item_vs = sourceDirStr + "/spinitem.vs";
+string item_fs = sourceDirStr + "/spinitem.fs";
+string playerModelPath = modelDirStr + "/FastRun/FastRun.dae";
+string professorModelPath = modelDirStr + "/Professor/Professor.dae";
+string girlfiendModelPath = modelDirStr + "/girlfriend/girlfriend.dae";
+string BeerModelPath = modelDirStr + "/Beer/Beer.dae";
+//string BeerModelPath = modelDirStr + "/Calculator/Calculator.dae";
+//string BeerModelPath = modelDirStr + "/Gamepad/Gamepad.dae";
+//string BeerModelPath = modelDirStr + "/Book/Book.dae";
 
 int main()
 {
@@ -96,11 +113,8 @@ int main()
 	// draw in wireframe
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-	// Initialize Player
-	player = new Player();
-	GameObjects.push_back((GameObject*)player);
-	player->SetShader(player_vs, player_fs);
-	player->SetModel(playerModelPath);
+	// Model Preloading 
+	ModelLoading();
 
 	// Initialize Particles
 	for (int i = 0; i < 3; i++)
@@ -143,8 +157,27 @@ int main()
 		// Update, Render All GameObjects
 		for (GameObject* gameObject : GameObjects)
 		{
+			if (!gameObject->bActivated) continue;
+
 			gameObject->Update(deltaTime);
 			gameObject->Render(projection, view);
+
+			// If not Player, collision check with player
+			if (gameObject->bIsItem)
+			{
+				Item* item = (Item*)gameObject;
+				if (item->IsCollideWithPlayer(*player) )
+				{
+					PlayParticleAtIndex(item->GetLineIndex());
+					item->CollisionEvent();
+					item->SetInitialPosition(-2.f + particlePosXOffset * item->GetLineIndex(), -10);
+				}
+				else if (item->_transform->getLocalPosition().z >= 3)
+				{
+					item->bActivated = false;
+					item->SetInitialPosition(-2.f + particlePosXOffset * item->GetLineIndex(), -10);
+				}
+			}
 		}
 
 		// Running Particle Animation
@@ -221,6 +254,46 @@ GLFWwindow *glAllInit()
     glEnable(GL_DEPTH_TEST);
 
     return window;
+}
+
+void ModelLoading()
+{
+	// Initialize Player
+	player = new Player();
+	GameObjects.push_back((GameObject*)player);
+	player->SetShader(human_vs, human_fs);
+	player->SetModel(playerModelPath);
+	player->bIsItem = false;
+
+	// Preload Professor and Girlfriend
+	for (int i = 0; i < 3; i++)
+	{
+		HumanItem* newHuman = new HumanItem(professorModelPath, 0, ScoreOfItem[ItemType::Professor], glm::vec3(0.8f, 0.8f, 0.8f));
+		newHuman->SetInitialPosition(-2, -10);
+		newHuman->SetShader(human_vs, human_fs);
+		newHuman->bActivated = false;
+		newHuman->SetCollisionBound(.5f, 2.f, .5f);
+		ProfessorPool.push_back(newHuman);
+
+		HumanItem* newHuman2 = new HumanItem(girlfiendModelPath, 0, ScoreOfItem[ItemType::GirlFriend], glm::vec3(0.8f, 0.8f, 0.8f));
+		newHuman2->SetInitialPosition(-2, -10);
+		newHuman2->SetShader(human_vs, human_fs);
+		newHuman2->bActivated = false;
+		newHuman2->SetCollisionBound(.5f, 2.f, .5f);
+		GirlFriendPool.push_back(newHuman2);
+	}
+
+	// Preload Spin Item
+	for (int i = 0; i < 4; i++)
+	{
+		SpinItem* newItem = new SpinItem(BeerModelPath, 0, ScoreOfItem[ItemType::Beer], glm::vec3(4.f, 4.f, 4.f));
+		newItem->SetInitialPosition(-2, -10);
+		newItem->SetShader(item_vs, item_fs);
+		newItem->bActivated = false;
+		newItem->SetCollisionBound(.5f, 1.f, .5f);
+		SojuPool.push_back(newItem);
+	}
+
 }
 
 void UpdateParticleAnim()
@@ -303,23 +376,40 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		CameraPosition -= CameraOffset;
 	}
 
-	// Particle Animation Test
+	// Human Item Animation Test
 	if (key == GLFW_KEY_T && action == GLFW_PRESS)
 	{
-		cout << "Press T";
-		PlayParticleAtIndex(0);
+		for (int i = 0; i < ProfessorPool.size(); i++)
+		{
+			if (ProfessorPool[i]->bActivated == false)
+			{
+				if (!(find(GameObjects.begin(), GameObjects.end(), ProfessorPool[i]) != GameObjects.end()))
+				{
+					GameObjects.push_back((GameObject*)ProfessorPool[i]);
+				}
+				ProfessorPool[i]->bActivated = true;
+				ProfessorPool[i]->SetInitialPosition(-2,  -10.f);
+				break;
+			}
+		}
 	}
 	if (key == GLFW_KEY_Y && action == GLFW_PRESS)
 	{
-		cout << "Press T";
-		PlayParticleAtIndex(1);
+		for (int i = 0; i < SojuPool.size(); i++)
+		{
+			if (SojuPool[i]->bActivated == false)
+			{
+				if (!(find(GameObjects.begin(), GameObjects.end(), SojuPool[i]) != GameObjects.end()))
+				{
+					GameObjects.push_back((GameObject*)SojuPool[i]);
+				}
+				SojuPool[i]->bActivated = true;
+				SojuPool[i]->SetInitialPosition(-2, -10.f);
+				SojuPool[i]->SetAnimInit();
+				break;
+			}
+		}
 	}
-	if (key == GLFW_KEY_U && action == GLFW_PRESS)
-	{
-		cout << "Press T";
-		PlayParticleAtIndex(2);
-	}
-
 }
 
 void PlayParticleAtIndex(int index)

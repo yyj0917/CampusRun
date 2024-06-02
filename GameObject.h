@@ -9,6 +9,13 @@ public:
 	Transform* _transform;
 	Model* _model;
 	Shader* _shader;
+	bool bActivated = true;
+	bool bIsItem = false;
+
+	void SetActive(bool bActivated)
+	{
+		this->bActivated = bActivated;
+	}
 
 	GameObject() 
 	{

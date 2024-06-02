@@ -2,6 +2,8 @@
 #include "GameObject.h"
 #include "CustomMath.h"
 
+using namespace std;
+
 class Player : public GameObject
 {
 private:
@@ -32,7 +34,7 @@ public:
 
 	virtual void SetModel(const string& modelPath) override
 	{
-		GameObject::SetModel(modelPath);
+		__super::SetModel(modelPath);
 
 		_anim = new Animation(modelPath, _model);
 		_animator = new Animator(_anim);
@@ -46,6 +48,9 @@ public:
 			if (PlayerToMove == -HowMuchMove) return;
 			if (!bCanMove) return;
 
+			// Todo: Insert Sound
+			cout << "Log: Player Move Sound Play" << endl;
+
 			PlayerToMove -= HowMuchMove;
 		}
 
@@ -55,12 +60,18 @@ public:
 			if (PlayerToMove == HowMuchMove) return;
 			if (!bCanMove) return;
 
+			// Todo: Insert Sound
+			cout << "Log: Player Move Sound Play" << endl;
+
 			PlayerToMove += HowMuchMove;
 		}
 
 		if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
 		{
 			if (!bCanJump) return;
+
+			// Todo: Insert Sound
+			cout << "Log: Player Move Sound Play" << endl;
 
 			CurrentVerticalSpeed = JumpForce;
 			bCanJump = false;
