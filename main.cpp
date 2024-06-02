@@ -50,7 +50,10 @@ vector<GameObject*> GameObjects;
 // Preloading
 vector<HumanItem*> ProfessorPool;
 vector<HumanItem*> GirlFriendPool;
-vector<SpinItem*> SojuPool;
+vector<SpinItem*> BookPool;
+vector<SpinItem*> GamepadPool;
+vector<SpinItem*> CalculatorPool;
+vector<SpinItem*> BeerPool;
 
 // Eat Particles
 vector<vector<Mass*>> ParticleVector;
@@ -101,9 +104,9 @@ string playerModelPath = modelDirStr + "/FastRun/FastRun.dae";
 string professorModelPath = modelDirStr + "/Professor/Professor.dae";
 string girlfiendModelPath = modelDirStr + "/girlfriend/girlfriend.dae";
 string BeerModelPath = modelDirStr + "/Beer/Beer.dae";
-//string BeerModelPath = modelDirStr + "/Calculator/Calculator.dae";
-//string BeerModelPath = modelDirStr + "/Gamepad/Gamepad.dae";
-//string BeerModelPath = modelDirStr + "/Book/Book.dae";
+string CalculatorModelPath = modelDirStr + "/Calculator/Calculator.dae";
+string GamepadModelPath = modelDirStr + "/Gamepad/Gamepad.dae";
+string BookModelPath = modelDirStr + "/Book/Book.dae";
 
 int main()
 {
@@ -291,7 +294,34 @@ void ModelLoading()
 		newItem->SetShader(item_vs, item_fs);
 		newItem->bActivated = false;
 		newItem->SetCollisionBound(.5f, 1.f, .5f);
-		SojuPool.push_back(newItem);
+		BeerPool.push_back(newItem);
+	}
+	for (int i = 0; i < 4; i++)
+	{
+		SpinItem* newItem = new SpinItem(BookModelPath, 0, ScoreOfItem[ItemType::Book], glm::vec3(0.3f, 0.3f, 0.3f));
+		newItem->SetInitialPosition(-2, -10);
+		newItem->SetShader(item_vs, item_fs);
+		newItem->bActivated = false;
+		newItem->SetCollisionBound(.5f, 1.f, .5f);
+		BookPool.push_back(newItem);
+	}
+	for (int i = 0; i < 4; i++)
+	{
+		SpinItem* newItem = new SpinItem(CalculatorModelPath, 0, ScoreOfItem[ItemType::Calculator], glm::vec3(6.f, 6.f, 6.f));
+		newItem->SetInitialPosition(-2, -10);
+		newItem->SetShader(item_vs, item_fs);
+		newItem->bActivated = false;
+		newItem->SetCollisionBound(.5f, 1.f, .5f);
+		CalculatorPool.push_back(newItem);
+	}
+	for (int i = 0; i < 4; i++)
+	{
+		SpinItem* newItem = new SpinItem(GamepadModelPath, 0, ScoreOfItem[ItemType::GamePad], glm::vec3(0.4f, 0.4f, 0.4f));
+		newItem->SetInitialPosition(-2, -10);
+		newItem->SetShader(item_vs, item_fs);
+		newItem->bActivated = false;
+		newItem->SetCollisionBound(.5f, 1.f, .5f);
+		GamepadPool.push_back(newItem);
 	}
 
 }
@@ -377,7 +407,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	}
 
 	// Human Item Animation Test
-	if (key == GLFW_KEY_T && action == GLFW_PRESS)
+	if (key == GLFW_KEY_1 && action == GLFW_PRESS)
 	{
 		for (int i = 0; i < ProfessorPool.size(); i++)
 		{
@@ -393,19 +423,87 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 			}
 		}
 	}
-	if (key == GLFW_KEY_Y && action == GLFW_PRESS)
+
+	if (key == GLFW_KEY_2 && action == GLFW_PRESS)
 	{
-		for (int i = 0; i < SojuPool.size(); i++)
+		for (int i = 0; i < GirlFriendPool.size(); i++)
 		{
-			if (SojuPool[i]->bActivated == false)
+			if (GirlFriendPool[i]->bActivated == false)
 			{
-				if (!(find(GameObjects.begin(), GameObjects.end(), SojuPool[i]) != GameObjects.end()))
+				if (!(find(GameObjects.begin(), GameObjects.end(), GirlFriendPool[i]) != GameObjects.end()))
 				{
-					GameObjects.push_back((GameObject*)SojuPool[i]);
+					GameObjects.push_back((GameObject*)GirlFriendPool[i]);
 				}
-				SojuPool[i]->bActivated = true;
-				SojuPool[i]->SetInitialPosition(-2, -10.f);
-				SojuPool[i]->SetAnimInit();
+				GirlFriendPool[i]->bActivated = true;
+				GirlFriendPool[i]->SetInitialPosition(-2, -10.f);
+				break;
+			}
+		}
+	}
+	if (key == GLFW_KEY_3 && action == GLFW_PRESS)
+	{
+		for (int i = 0; i < BookPool.size(); i++)
+		{
+			if (BookPool[i]->bActivated == false)
+			{
+				if (!(find(GameObjects.begin(), GameObjects.end(), BookPool[i]) != GameObjects.end()))
+				{
+					GameObjects.push_back((GameObject*)BookPool[i]);
+				}
+				BookPool[i]->bActivated = true;
+				BookPool[i]->SetInitialPosition(-2, -10.f);
+				BookPool[i]->SetAnimInit();
+				break;
+			}
+		}
+	}
+	if (key == GLFW_KEY_4 && action == GLFW_PRESS)
+	{
+		for (int i = 0; i < GamepadPool.size(); i++)
+		{
+			if (GamepadPool[i]->bActivated == false)
+			{
+				if (!(find(GameObjects.begin(), GameObjects.end(), GamepadPool[i]) != GameObjects.end()))
+				{
+					GameObjects.push_back((GameObject*)GamepadPool[i]);
+				}
+				GamepadPool[i]->bActivated = true;
+				GamepadPool[i]->SetInitialPosition(-2, -10.f);
+				GamepadPool[i]->SetAnimInit();
+				break;
+			}
+		}
+	}
+	if (key == GLFW_KEY_5 && action == GLFW_PRESS)
+	{
+		for (int i = 0; i < CalculatorPool.size(); i++)
+		{
+			if (CalculatorPool[i]->bActivated == false)
+			{
+				if (!(find(GameObjects.begin(), GameObjects.end(), CalculatorPool[i]) != GameObjects.end()))
+				{
+					GameObjects.push_back((GameObject*)CalculatorPool[i]);
+				}
+				CalculatorPool[i]->bActivated = true;
+				CalculatorPool[i]->SetInitialPosition(-2, -10.f);
+				CalculatorPool[i]->SetAnimInit();
+				break;
+			}
+		}
+	}
+	if (key == GLFW_KEY_6 && action == GLFW_PRESS)
+	{
+		for (int i = 0; i < BeerPool.size(); i++)
+		{
+			if (BeerPool[i]->bActivated == false)
+			{
+				if (!(find(GameObjects.begin(), GameObjects.end(), BeerPool[i]) != GameObjects.end()))
+				{
+					GameObjects.push_back((GameObject*)BeerPool[i]);
+				}
+				BeerPool[i]->bActivated = true;
+				BeerPool[i]->SetInitialPosition(-2, -10.f);
+				BeerPool[i]->SetAnimInit();
 				break;
 			}
 		}
