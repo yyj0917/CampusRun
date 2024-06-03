@@ -316,7 +316,7 @@ void ModelLoading()
 	}
 	for (int i = 0; i < 4; i++)
 	{
-		SpinItem* newItem = new SpinItem(GamepadModelPath, 0, ScoreOfItem[ItemType::GamePad], glm::vec3(0.4f, 0.4f, 0.4f));
+		SpinItem* newItem = new SpinItem(GamepadModelPath, 0, ScoreOfItem[ItemType::GamePad], glm::vec3(0.05f, 0.05f, 0.05f));
 		newItem->SetInitialPosition(-2, -10);
 		newItem->SetShader(item_vs, item_fs);
 		newItem->bActivated = false;
