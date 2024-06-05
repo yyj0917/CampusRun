@@ -55,6 +55,9 @@ vector<SpinItem*> GamepadPool;
 vector<SpinItem*> CalculatorPool;
 vector<SpinItem*> BeerPool;
 
+// Line Position
+enum Line {Left, Middle, Right};
+
 // Eat Particles
 vector<vector<Mass*>> ParticleVector;
 float initialParticlePosY = 0.f;
@@ -82,6 +85,12 @@ glm::vec3 CameraTargetPosition(0.0f, 1.6f, 0.0f);
 int ZoomAmount = 0;
 glm::vec3 TargetOffset(0.0f, 0.0f, 0.0f);
 glm::vec3 CameraOffset(0.0f, -1.0f, 0.0f);
+
+// Light
+glm::vec3 DirectionalLight(-3,- 1,-4);
+glm::vec3 DirLightAmbient(0.3, 0.3, 0.3);
+glm::vec3 DirLightDiffuse(0.9, 0.9, 0.9);
+glm::vec3 DirLightSpecular(0.5, 0.5, 0.5);
 
 // camera
 Camera camera(CameraPosition);
@@ -236,19 +245,22 @@ int main()
 		{
 			if (!gameObject->bActivated) continue;
 
+			// If GameObject is activated, run Update, Render
 			gameObject->Update(deltaTime);
-			gameObject->Render(projection, view);
+			gameObject->Render(projection, view, DirectionalLight, DirLightAmbient, DirLightDiffuse, DirLightSpecular, CameraPosition);
 
 			// If not Player, collision check with player
 			if (gameObject->bIsItem)
 			{
 				Item* item = (Item*)gameObject;
+				// Collide with Player
 				if (item->IsCollideWithPlayer(*player) )
 				{
 					PlayParticleAtIndex(item->GetLineIndex());
 					item->CollisionEvent();
 					item->SetInitialPosition(-2.f + particlePosXOffset * item->GetLineIndex(), -10);
 				}
+				// 
 				else if (item->_transform->getLocalPosition().z >= 3)
 				{
 					item->bActivated = false;
@@ -380,6 +392,7 @@ unsigned int loadCubemap(vector<std::string> faces)
 	return textureID;
 }
 
+// Preload Modeling -> Reduce Lag
 void ModelLoading()
 {
 	// Initialize Player
@@ -539,7 +552,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 					GameObjects.push_back((GameObject*)ProfessorPool[i]);
 				}
 				ProfessorPool[i]->bActivated = true;
-				ProfessorPool[i]->SetInitialPosition(-2,  -10.f);
+				ProfessorPool[i]->SetInitialPositionByIndex(Line::Left);
 				break;
 			}
 		}
@@ -556,7 +569,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 					GameObjects.push_back((GameObject*)GirlFriendPool[i]);
 				}
 				GirlFriendPool[i]->bActivated = true;
-				GirlFriendPool[i]->SetInitialPosition(-2, -10.f);
+				GirlFriendPool[i]->SetInitialPositionByIndex(Line::Middle);
 				break;
 			}
 		}
@@ -572,7 +585,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 					GameObjects.push_back((GameObject*)BookPool[i]);
 				}
 				BookPool[i]->bActivated = true;
-				BookPool[i]->SetInitialPosition(-2, -10.f);
+				BookPool[i]->SetInitialPositionByIndex(Line::Right);
 				BookPool[i]->SetAnimInit();
 				break;
 			}
@@ -589,7 +602,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 					GameObjects.push_back((GameObject*)GamepadPool[i]);
 				}
 				GamepadPool[i]->bActivated = true;
-				GamepadPool[i]->SetInitialPosition(-2, -10.f);
+				GamepadPool[i]->SetInitialPositionByIndex(Line::Left);
 				GamepadPool[i]->SetAnimInit();
 				break;
 			}
@@ -606,7 +619,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 					GameObjects.push_back((GameObject*)CalculatorPool[i]);
 				}
 				CalculatorPool[i]->bActivated = true;
-				CalculatorPool[i]->SetInitialPosition(-2, -10.f);
+				CalculatorPool[i]->SetInitialPositionByIndex(Line::Middle);
 				CalculatorPool[i]->SetAnimInit();
 				break;
 			}
@@ -623,7 +636,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 					GameObjects.push_back((GameObject*)BeerPool[i]);
 				}
 				BeerPool[i]->bActivated = true;
-				BeerPool[i]->SetInitialPosition(-2, -10.f);
+				BeerPool[i]->SetInitialPositionByIndex(Line::Right);
 				BeerPool[i]->SetAnimInit();
 				break;
 			}

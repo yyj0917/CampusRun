@@ -75,12 +75,13 @@ public:
 		Item::Update(deltaTime);
 	}
 
-	virtual void Render(const glm::mat4& projection, const glm::mat4& view)
+	virtual void Render(const glm::mat4& projection, const glm::mat4& view, const glm::vec3& direction, const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& cameraPos) override
 	{
 		if (_shader == nullptr) return;
 		_shader->use();
 		_shader->setMat4("projection", projection);
 		_shader->setMat4("view", view);
+		SetUniformVar(direction, ambient, diffuse, specular, cameraPos);
 
 		float cTime = (float)glfwGetTime(); // current time
 		timeT = cTime - beginT;

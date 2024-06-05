@@ -23,6 +23,13 @@ public:
 		zBoundVolume = zVolume;
 	}
 
+	void SetInitialPositionByIndex(int index)
+	{
+		lineIndex = index;
+		SetInitialPosition(-2.f + 2.f * index, -10);
+	}
+
+	// Set Spawn Position, initialPosX must in {-2, 0, 2}
 	void SetInitialPosition(float initialPosX, float initialPosZ)
 	{
 		_transform->setLocalPosition(glm::vec3(
@@ -30,6 +37,8 @@ public:
 			0.f,
 			initialPosZ)
 		);
+
+
 	}
 
 	virtual void CollisionEvent()
