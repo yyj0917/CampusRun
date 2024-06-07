@@ -86,8 +86,8 @@ int nFrame[] = { 0, 0, 0 };
 bool bShowParticle[] = { false, false, false };
 
 // Source and Data directories
-string sourceDirStr = "C:/Users/dlatj/OneDrive/Desktop/2024-1/ComputerGraphics/Codes/Window2024/project/project";
-string modelDirStr = "C:/Users/dlatj/OneDrive/Desktop/2024-1/ComputerGraphics/Codes/Window2024/data";
+string sourceDirStr = "E:/Setup_Windows/SkeletalAnimation/SkeletalAnimation";
+string modelDirStr = "E:/Setup_Windows/data";
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
