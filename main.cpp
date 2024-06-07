@@ -72,6 +72,9 @@ GameInfo* gameInfo;
 // Line Position
 enum Line { Left, Middle, Right };
 
+// Line Position
+enum Line {Left, Middle, Right};
+
 // Eat Particles
 vector<vector<Mass*>> ParticleVector;
 float initialParticlePosY = 0.f;
@@ -101,7 +104,7 @@ glm::vec3 TargetOffset(0.0f, 0.0f, 0.0f);
 glm::vec3 CameraOffset(0.0f, -1.0f, 0.0f);
 
 // Light
-glm::vec3 DirectionalLight(-3, -1, -4);
+glm::vec3 DirectionalLight(-3,- 1,-4);
 glm::vec3 DirLightAmbient(0.3, 0.3, 0.3);
 glm::vec3 DirLightDiffuse(0.9, 0.9, 0.9);
 glm::vec3 DirLightSpecular(0.5, 0.5, 0.5);
@@ -281,7 +284,7 @@ int main()
 			{
 				Item* item = (Item*)gameObject;
 				// Collide with Player
-				if (item->IsCollideWithPlayer(*player))
+				if (item->IsCollideWithPlayer(*player) )
 				{
 					PlayParticleAtIndex(item->GetLineIndex());
 					item->CollisionEvent();
