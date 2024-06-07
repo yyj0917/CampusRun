@@ -13,16 +13,18 @@ public:
 	float animEndTime;
 	KeyFraming* yRKF;
 
-	SpinItem(const string& modelPath, int lineIndex, int score, glm::vec3 Scale)
+	SpinItem(const string& modelPath, int lineIndex, int score, glm::vec3 Scale, bool itemType)
 	{
 		SetModel(modelPath);
 		this->lineIndex = lineIndex;
 		this->score = score;
 		this->bIsItem = true;
 		this->Scale = Scale;
+		this->itemType = itemType;
 		animEndTime = 2.f;
 		yRKF = new KeyFraming(5);
 		initKeyframes();
+		
 	}
 
 	~SpinItem()

@@ -10,13 +10,14 @@ public:
 	Animator* _animator;
 	glm::vec3 Scale;
 
-	HumanItem(const string& modelPath, int lineIndex, int score, glm::vec3 Scale)
+	HumanItem(const string& modelPath, int lineIndex, int score, glm::vec3 Scale, bool itemType)
 	{
 		SetModel(modelPath);
 		this->lineIndex = lineIndex;
 		this->score = score;
 		this->bIsItem = true;
 		this->Scale = Scale;
+		this->itemType = itemType;
 	}
 
 	~HumanItem()

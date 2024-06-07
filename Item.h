@@ -7,6 +7,7 @@ protected:
 	
 	int score;
 	int lineIndex;
+	bool itemType; // 0 : negative 1 : positive
 	float moveSpeed = 5.f;
 	float xBoundVolume = 0.5f;
 	float yBoundVolume = 0.5f;
@@ -15,6 +16,12 @@ protected:
 public:
 
 	int GetLineIndex() { return lineIndex; }
+
+	bool getItemType() { return itemType; }
+
+	void setItemType(bool itemType) {
+		this->itemType = itemType;
+	}
 
 	void SetCollisionBound(float xVolume, float yVolume, float zVolume)
 	{
@@ -64,6 +71,7 @@ public:
 
 	void SetScore(int score)
 	{
+		
 		this->score = score;
 	}
 
