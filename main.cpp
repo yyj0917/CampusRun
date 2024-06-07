@@ -20,21 +20,25 @@
 #include "HumanItem.h"
 #include <mass.h>
 #include "SpinItem.h"
+#include "GameInfo.h";
+#include "Road.h"
+
 
 // FUNCTION PROTOTYPES
-GLFWwindow *glAllInit();
+GLFWwindow* glAllInit();
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 //void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 unsigned int loadCubemap(vector<std::string> faces);
+void spawnRandomItems();
 void ModelLoading();
 
 
 // Custom Functions
 
 // Set Initial Particle Position
-void particleInit(int index);   
+void particleInit(int index);
 
 // Running Particle Animation
 void UpdateParticleAnim();
@@ -54,6 +58,19 @@ vector<SpinItem*> BookPool;
 vector<SpinItem*> GamepadPool;
 vector<SpinItem*> CalculatorPool;
 vector<SpinItem*> BeerPool;
+vector<Road*> Roads1;
+vector<Road*> Roads2;
+vector<Road*> Roads3;
+vector<Road*> Roads1_2;
+vector<Road*> Roads2_2;
+vector<Road*> Roads3_2;
+vector<Road*> Roads1_3;
+vector<Road*> Roads2_3;
+vector<Road*> Roads3_3;
+GameInfo* gameInfo;
+
+// Line Position
+enum Line { Left, Middle, Right };
 
 // Eat Particles
 vector<vector<Mass*>> ParticleVector;
@@ -66,15 +83,15 @@ Shader* skyboxShader = NULL;
 float deltaT = 1.0f / 30.0f;
 float timeT[] = { 0.f, 0.f, 0.f };
 int nFrame[] = { 0, 0, 0 };
-bool bShowParticle[] = {false, false, false };
+bool bShowParticle[] = { false, false, false };
 
 // Source and Data directories
-string sourceDirStr = "E:/Setup_Windows/SkeletalAnimation/SkeletalAnimation";
-string modelDirStr = "E:/Setup_Windows/data";
+string sourceDirStr = "C:/Users/dlatj/OneDrive/Desktop/2024-1/ComputerGraphics/Codes/Window2024/project/project";
+string modelDirStr = "C:/Users/dlatj/OneDrive/Desktop/2024-1/ComputerGraphics/Codes/Window2024/data";
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
-GLFWwindow *mainWindow = NULL;
+GLFWwindow* mainWindow = NULL;
 
 // Camera Position
 glm::vec3 CameraPosition(0.0f, 4.0f, 5.0f);
@@ -82,6 +99,12 @@ glm::vec3 CameraTargetPosition(0.0f, 1.6f, 0.0f);
 int ZoomAmount = 0;
 glm::vec3 TargetOffset(0.0f, 0.0f, 0.0f);
 glm::vec3 CameraOffset(0.0f, -1.0f, 0.0f);
+
+// Light
+glm::vec3 DirectionalLight(-3, -1, -4);
+glm::vec3 DirLightAmbient(0.3, 0.3, 0.3);
+glm::vec3 DirLightDiffuse(0.9, 0.9, 0.9);
+glm::vec3 DirLightSpecular(0.5, 0.5, 0.5);
 
 // camera
 Camera camera(CameraPosition);
@@ -108,11 +131,19 @@ string BeerModelPath = modelDirStr + "/Beer/Beer.dae";
 string CalculatorModelPath = modelDirStr + "/Calculator/Calculator.dae";
 string GamepadModelPath = modelDirStr + "/Gamepad/Gamepad.dae";
 string BookModelPath = modelDirStr + "/Book/Book.dae";
+string RoadModelPath = modelDirStr + "/Road/road.dae";
 string skybox_vs = sourceDirStr + "/skybox.vs";
 string skybox_fs = sourceDirStr + "/skybox.fs";
+string road_vs = sourceDirStr + "/road.vs";
+string road_fs = sourceDirStr + "/road.fs";
+
+
+float lastSpawnTime = 0.0f;
 
 int main()
 {
+	gameInfo = new GameInfo();
+
 	float skyboxVertices[] = {
 		// positions          //back
 		-10.0f,  10.0f, -10.0f,
@@ -159,7 +190,7 @@ int main()
 	};
 
 
-    mainWindow = glAllInit();
+	mainWindow = glAllInit();
 	glfwSetKeyCallback(mainWindow, key_callback);
 
 	// draw in wireframe
@@ -208,6 +239,7 @@ int main()
 
 	skyboxShader->use();
 	skyboxShader->setInt("skybox", 0);
+
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(mainWindow))
@@ -221,6 +253,10 @@ int main()
 		camera.Position = CameraPosition;
 		camera.Front = CameraTargetPosition - CameraPosition;
 
+		if (currentFrame - lastSpawnTime >= 1.0f) {
+			spawnRandomItems();
+			lastSpawnTime = currentFrame;
+		}
 		// render
 		// ------
 		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
@@ -236,25 +272,179 @@ int main()
 		{
 			if (!gameObject->bActivated) continue;
 
+			// If GameObject is activated, run Update, Render
 			gameObject->Update(deltaTime);
-			gameObject->Render(projection, view);
+			gameObject->Render(projection, view, DirectionalLight, DirLightAmbient, DirLightDiffuse, DirLightSpecular, CameraPosition);
 
 			// If not Player, collision check with player
 			if (gameObject->bIsItem)
 			{
 				Item* item = (Item*)gameObject;
-				if (item->IsCollideWithPlayer(*player) )
+				// Collide with Player
+				if (item->IsCollideWithPlayer(*player))
 				{
 					PlayParticleAtIndex(item->GetLineIndex());
 					item->CollisionEvent();
 					item->SetInitialPosition(-2.f + particlePosXOffset * item->GetLineIndex(), -10);
+					gameInfo->setScore(item);
+					printf("Negative Score : %d\n", gameInfo->getNegScore());
+					printf("Positive Score : %d\n", gameInfo->getPosScore());
 				}
+				// 
 				else if (item->_transform->getLocalPosition().z >= 3)
 				{
 					item->bActivated = false;
 					item->SetInitialPosition(-2.f + particlePosXOffset * item->GetLineIndex(), -10);
 				}
 			}
+
+			if (dynamic_cast<Road*>(gameObject)) {
+				Road* road = static_cast<Road*>(gameObject);
+
+				if (road->GetOrder() == 1) {
+					// left
+					if (road->GetPosition() == -1) {
+						if (road->_transform->getLocalPosition().z > player->_transform->getLocalPosition().z + 10.0f)
+						{
+							float minZ = road->_transform->getLocalPosition().z;
+							for (Road* r : Roads2)
+							{
+								if (r->_transform->getLocalPosition().z < minZ)
+								{
+									minZ = r->_transform->getLocalPosition().z;
+								}
+							}
+							road->SetInitialPosition(-4.0f, minZ - 20.0f);
+						}
+					}
+					// middle
+					else if (road->GetPosition() == 0) {
+						if (road->_transform->getLocalPosition().z > player->_transform->getLocalPosition().z + 10.0f)
+						{
+							float minZ = road->_transform->getLocalPosition().z;
+							for (Road* r : Roads1)
+							{
+								if (r->_transform->getLocalPosition().z < minZ)
+								{
+									minZ = r->_transform->getLocalPosition().z;
+								}
+							}
+							road->SetInitialPosition(0.0f, minZ - 20.0f);
+						}
+					}
+					// right
+					else {
+						if (road->_transform->getLocalPosition().z > player->_transform->getLocalPosition().z + 10.0f)
+						{
+							float minZ = road->_transform->getLocalPosition().z;
+							for (Road* r : Roads3)
+							{
+								if (r->_transform->getLocalPosition().z < minZ)
+								{
+									minZ = r->_transform->getLocalPosition().z;
+								}
+							}
+							road->SetInitialPosition(4.0f, minZ - 20.0f);
+						}
+					}
+				}
+				else if (road->GetOrder() == 2){
+					// left
+					if (road->GetPosition() == -1) {
+						if (road->_transform->getLocalPosition().z > player->_transform->getLocalPosition().z + 10.0f)
+						{
+							float minZ = road->_transform->getLocalPosition().z;
+							for (Road* r : Roads2_2)
+							{
+								if (r->_transform->getLocalPosition().z < minZ)
+								{
+									minZ = r->_transform->getLocalPosition().z;
+								}
+							}
+							road->SetInitialPosition(-4.0f, minZ - 13.5f);
+						}
+					}
+					// middle
+					else if (road->GetPosition() == 0) {
+						if (road->_transform->getLocalPosition().z > player->_transform->getLocalPosition().z + 10.0f)
+						{
+							float minZ = road->_transform->getLocalPosition().z;
+							for (Road* r : Roads1_2)
+							{
+								if (r->_transform->getLocalPosition().z < minZ)
+								{
+									minZ = r->_transform->getLocalPosition().z;
+								}
+							}
+							road->SetInitialPosition(0.0f, minZ - 13.5f);
+						}
+					}
+					// right
+					else {
+						if (road->_transform->getLocalPosition().z > player->_transform->getLocalPosition().z + 10.0f)
+						{
+							float minZ = road->_transform->getLocalPosition().z;
+							for (Road* r : Roads3_2)
+							{
+								if (r->_transform->getLocalPosition().z < minZ)
+								{
+									minZ = r->_transform->getLocalPosition().z;
+								}
+							}
+							road->SetInitialPosition(4.0f, minZ - 13.5f);
+						}
+					}
+				}
+				else {
+					// left
+					if (road->GetPosition() == -1) {
+						if (road->_transform->getLocalPosition().z > player->_transform->getLocalPosition().z + 10.0f)
+						{
+							float minZ = road->_transform->getLocalPosition().z;
+							for (Road* r : Roads2_3)
+							{
+								if (r->_transform->getLocalPosition().z < minZ)
+								{
+									minZ = r->_transform->getLocalPosition().z;
+								}
+							}
+							road->SetInitialPosition(-4.0f, minZ - 8.0f);
+						}
+					}
+					// middle
+					else if (road->GetPosition() == 0) {
+						if (road->_transform->getLocalPosition().z > player->_transform->getLocalPosition().z + 10.0f)
+						{
+							float minZ = road->_transform->getLocalPosition().z;
+							for (Road* r : Roads1_3)
+							{
+								if (r->_transform->getLocalPosition().z < minZ)
+								{
+									minZ = r->_transform->getLocalPosition().z;
+								}
+							}
+							road->SetInitialPosition(0.0f, minZ - 8.0f);
+						}
+					}
+					// right
+					else {
+						if (road->_transform->getLocalPosition().z > player->_transform->getLocalPosition().z + 10.0f)
+						{
+							float minZ = road->_transform->getLocalPosition().z;
+							for (Road* r : Roads3_3)
+							{
+								if (r->_transform->getLocalPosition().z < minZ)
+								{
+									minZ = r->_transform->getLocalPosition().z;
+								}
+							}
+							road->SetInitialPosition(4.0f, minZ - 8.0f);
+						}
+					}
+				}
+				
+			}
+			
 		}
 
 		// Running Particle Animation
@@ -301,51 +491,51 @@ int main()
 	return 0;
 }
 
-GLFWwindow *glAllInit()
+GLFWwindow* glAllInit()
 {
-    // glfw: initialize and configure
-    // ------------------------------
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-    
-    // glfw window creation
-    // --------------------
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Campus Run", NULL, NULL);
-    if (window == NULL)
-    {
-        std::cout << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        exit(-1);
-    }
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glfwSetScrollCallback(window, scroll_callback);
-    
-    // tell GLFW to capture our mouse
-    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    
-    // glad: load all OpenGL function pointers
-    // ---------------------------------------
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    {
-        std::cout << "Failed to initialize GLAD" << std::endl;
-        exit(-1);
-    }
-    
-    // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
-    stbi_set_flip_vertically_on_load(true);
-    
-    // configure global opengl state
-    // -----------------------------
-    glEnable(GL_DEPTH_TEST);
+	// glfw: initialize and configure
+	// ------------------------------
+	glfwInit();
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    return window;
+#ifdef __APPLE__
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+	// glfw window creation
+	// --------------------
+	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Campus Run", NULL, NULL);
+	if (window == NULL)
+	{
+		std::cout << "Failed to create GLFW window" << std::endl;
+		glfwTerminate();
+		exit(-1);
+	}
+	glfwMakeContextCurrent(window);
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glfwSetScrollCallback(window, scroll_callback);
+
+	// tell GLFW to capture our mouse
+	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+	// glad: load all OpenGL function pointers
+	// ---------------------------------------
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+	{
+		std::cout << "Failed to initialize GLAD" << std::endl;
+		exit(-1);
+	}
+
+	// tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
+	stbi_set_flip_vertically_on_load(true);
+
+	// configure global opengl state
+	// -----------------------------
+	glEnable(GL_DEPTH_TEST);
+
+	return window;
 }
 
 unsigned int loadCubemap(vector<std::string> faces)
@@ -380,6 +570,7 @@ unsigned int loadCubemap(vector<std::string> faces)
 	return textureID;
 }
 
+// Preload Modeling -> Reduce Lag
 void ModelLoading()
 {
 	// Initialize Player
@@ -392,14 +583,14 @@ void ModelLoading()
 	// Preload Professor and Girlfriend
 	for (int i = 0; i < 3; i++)
 	{
-		HumanItem* newHuman = new HumanItem(professorModelPath, 0, ScoreOfItem[ItemType::Professor], glm::vec3(0.8f, 0.8f, 0.8f));
+		HumanItem* newHuman = new HumanItem(professorModelPath, 0, ScoreOfItem[ItemType::Professor], glm::vec3(0.8f, 0.8f, 0.8f), false);
 		newHuman->SetInitialPosition(-2, -10);
 		newHuman->SetShader(human_vs, human_fs);
 		newHuman->bActivated = false;
 		newHuman->SetCollisionBound(.5f, 2.f, .5f);
 		ProfessorPool.push_back(newHuman);
 
-		HumanItem* newHuman2 = new HumanItem(girlfiendModelPath, 0, ScoreOfItem[ItemType::GirlFriend], glm::vec3(0.8f, 0.8f, 0.8f));
+		HumanItem* newHuman2 = new HumanItem(girlfiendModelPath, 0, ScoreOfItem[ItemType::GirlFriend], glm::vec3(0.8f, 0.8f, 0.8f), true);
 		newHuman2->SetInitialPosition(-2, -10);
 		newHuman2->SetShader(human_vs, human_fs);
 		newHuman2->bActivated = false;
@@ -410,7 +601,7 @@ void ModelLoading()
 	// Preload Spin Item
 	for (int i = 0; i < 4; i++)
 	{
-		SpinItem* newItem = new SpinItem(BeerModelPath, 0, ScoreOfItem[ItemType::Beer], glm::vec3(4.f, 4.f, 4.f));
+		SpinItem* newItem = new SpinItem(BeerModelPath, 0, ScoreOfItem[ItemType::Beer], glm::vec3(4.f, 4.f, 4.f), false);
 		newItem->SetInitialPosition(-2, -10);
 		newItem->SetShader(item_vs, item_fs);
 		newItem->bActivated = false;
@@ -419,7 +610,7 @@ void ModelLoading()
 	}
 	for (int i = 0; i < 4; i++)
 	{
-		SpinItem* newItem = new SpinItem(BookModelPath, 0, ScoreOfItem[ItemType::Book], glm::vec3(0.3f, 0.3f, 0.3f));
+		SpinItem* newItem = new SpinItem(BookModelPath, 0, ScoreOfItem[ItemType::Book], glm::vec3(0.3f, 0.3f, 0.3f), true);
 		newItem->SetInitialPosition(-2, -10);
 		newItem->SetShader(item_vs, item_fs);
 		newItem->bActivated = false;
@@ -428,7 +619,7 @@ void ModelLoading()
 	}
 	for (int i = 0; i < 4; i++)
 	{
-		SpinItem* newItem = new SpinItem(CalculatorModelPath, 0, ScoreOfItem[ItemType::Calculator], glm::vec3(6.f, 6.f, 6.f));
+		SpinItem* newItem = new SpinItem(CalculatorModelPath, 0, ScoreOfItem[ItemType::Calculator], glm::vec3(6.f, 6.f, 6.f), true);
 		newItem->SetInitialPosition(-2, -10);
 		newItem->SetShader(item_vs, item_fs);
 		newItem->bActivated = false;
@@ -437,7 +628,7 @@ void ModelLoading()
 	}
 	for (int i = 0; i < 4; i++)
 	{
-		SpinItem* newItem = new SpinItem(GamepadModelPath, 0, ScoreOfItem[ItemType::GamePad], glm::vec3(0.05f, 0.05f, 0.05f));
+		SpinItem* newItem = new SpinItem(GamepadModelPath, 0, ScoreOfItem[ItemType::GamePad], glm::vec3(0.05f, 0.05f, 0.05f), false);
 		newItem->SetInitialPosition(-2, -10);
 		newItem->SetShader(item_vs, item_fs);
 		newItem->bActivated = false;
@@ -445,6 +636,170 @@ void ModelLoading()
 		GamepadPool.push_back(newItem);
 	}
 
+	// Initialize Roads
+	for (int i = 0; i < 4; ++i)
+	{
+		Road* road = new Road(RoadModelPath, 30.0f, 0, 1);
+		road->SetShader(road_vs, road_fs);
+		road->SetInitialPosition(0.0f, -20.0f*i);
+		Roads1.push_back(road);
+		Road* road1 = new Road(RoadModelPath, 30.0f, -1, 1);
+		road1->SetShader(road_vs, road_fs);
+		road1->SetInitialPosition(-3.0f, -20.0f * i);
+		Roads2.push_back(road1);
+		Road* road2 = new Road(RoadModelPath, 30.0f, 1, 1);
+		road2->SetShader(road_vs, road_fs);
+		road2->SetInitialPosition(3.0f, -20.0f * i);
+		Roads3.push_back(road2);
+		GameObjects.push_back(road);
+		GameObjects.push_back(road1);
+		GameObjects.push_back(road2);
+	}
+
+	for (int i = 0; i < 4; ++i)
+	{
+		Road* road = new Road(RoadModelPath, 30.0f, 0, 2);
+		road->SetShader(road_vs, road_fs);
+		road->SetInitialPosition(0.0f, -14.0f * i);
+		Roads1_2.push_back(road);
+		Road* road1 = new Road(RoadModelPath, 30.0f, -1, 2);
+		road1->SetShader(road_vs, road_fs);
+		road1->SetInitialPosition(-4.0f, -14.0f * i);
+		Roads2_2.push_back(road1);
+		Road* road2 = new Road(RoadModelPath, 30.0f, 1, 2);
+		road2->SetShader(road_vs, road_fs);
+		road2->SetInitialPosition(4.0f, -14.0f * i);
+		Roads3_2.push_back(road2);
+		GameObjects.push_back(road);
+		GameObjects.push_back(road1);
+		GameObjects.push_back(road2);
+	}
+
+	for (int i = 0; i < 4; ++i)
+	{
+		Road* road = new Road(RoadModelPath, 30.0f, 0, 3);
+		road->SetShader(road_vs, road_fs);
+		road->SetInitialPosition(0.0f, -10.0f * i);
+		Roads1_3.push_back(road);
+		Road* road1 = new Road(RoadModelPath, 30.0f, -1, 3);
+		road1->SetShader(road_vs, road_fs);
+		road1->SetInitialPosition(-4.0f, -10.0f * i);
+		Roads2_3.push_back(road1);
+		Road* road2 = new Road(RoadModelPath, 30.0f, 1, 3);
+		road2->SetShader(road_vs, road_fs);
+		road2->SetInitialPosition(4.0f, -10.0f * i);
+		Roads3_3.push_back(road2);
+		GameObjects.push_back(road);
+		GameObjects.push_back(road1);
+		GameObjects.push_back(road2);
+	}
+
+}
+
+void spawnRandomItems()
+{
+	int randomItemType = rand() % 6 + 1;
+	Line randomLine = static_cast<Line>(rand() % 3);
+
+	switch (randomItemType)
+	{
+	case 1: // Professor
+		for (int i = 0; i < ProfessorPool.size(); i++)
+		{
+			if (ProfessorPool[i]->bActivated == false)
+			{
+				if (!(std::find(GameObjects.begin(), GameObjects.end(), ProfessorPool[i]) != GameObjects.end()))
+				{
+					GameObjects.push_back((GameObject*)ProfessorPool[i]);
+				}
+				ProfessorPool[i]->bActivated = true;
+				ProfessorPool[i]->SetInitialPositionByIndex(randomLine);
+				break;
+			}
+		}
+		break;
+	case 2: // Girlfriend
+		for (int i = 0; i < GirlFriendPool.size(); i++)
+		{
+			if (GirlFriendPool[i]->bActivated == false)
+			{
+				if (!(std::find(GameObjects.begin(), GameObjects.end(), GirlFriendPool[i]) != GameObjects.end()))
+				{
+					GameObjects.push_back((GameObject*)GirlFriendPool[i]);
+				}
+				GirlFriendPool[i]->bActivated = true;
+				GirlFriendPool[i]->SetInitialPositionByIndex(randomLine);
+				break;
+			}
+		}
+		break;
+	case 3: // Book
+		for (int i = 0; i < BookPool.size(); i++)
+		{
+			if (BookPool[i]->bActivated == false)
+			{
+				if (!(std::find(GameObjects.begin(), GameObjects.end(), BookPool[i]) != GameObjects.end()))
+				{
+					GameObjects.push_back((GameObject*)BookPool[i]);
+				}
+				BookPool[i]->bActivated = true;
+				BookPool[i]->SetInitialPositionByIndex(randomLine);
+				BookPool[i]->SetAnimInit();
+				break;
+			}
+		}
+		break;
+	case 4: // Gamepad
+		for (int i = 0; i < GamepadPool.size(); i++)
+		{
+			if (GamepadPool[i]->bActivated == false)
+			{
+				if (!(std::find(GameObjects.begin(), GameObjects.end(), GamepadPool[i]) != GameObjects.end()))
+				{
+					GameObjects.push_back((GameObject*)GamepadPool[i]);
+				}
+				GamepadPool[i]->bActivated = true;
+				GamepadPool[i]->SetInitialPositionByIndex(randomLine);
+				GamepadPool[i]->SetAnimInit();
+				break;
+			}
+		}
+		break;
+	case 5: // Calculator
+		for (int i = 0; i < CalculatorPool.size(); i++)
+		{
+			if (CalculatorPool[i]->bActivated == false)
+			{
+				if (!(std::find(GameObjects.begin(), GameObjects.end(), CalculatorPool[i]) != GameObjects.end()))
+				{
+					GameObjects.push_back((GameObject*)CalculatorPool[i]);
+				}
+				CalculatorPool[i]->bActivated = true;
+				CalculatorPool[i]->SetInitialPositionByIndex(randomLine);
+				CalculatorPool[i]->SetAnimInit();
+				break;
+			}
+		}
+		break;
+	case 6: // Beer
+		for (int i = 0; i < BeerPool.size(); i++)
+		{
+			if (BeerPool[i]->bActivated == false)
+			{
+				if (!(std::find(GameObjects.begin(), GameObjects.end(), BeerPool[i]) != GameObjects.end()))
+				{
+					GameObjects.push_back((GameObject*)BeerPool[i]);
+				}
+				BeerPool[i]->bActivated = true;
+				BeerPool[i]->SetInitialPositionByIndex(randomLine);
+				BeerPool[i]->SetAnimInit();
+				break;
+			}
+		}
+		break;
+	default:
+		break;
+	}
 }
 
 void UpdateParticleAnim()
@@ -459,7 +814,7 @@ void UpdateParticleAnim()
 			{
 				for (int j = 0; j < 8; j++)
 				{
-					ParticleVector[i][j]->euler(timeT[i], deltaT,  30 * cos((2 * 3.14 / 8) * j), 100, 30 * sin((2 * 3.14 / 8) * j));
+					ParticleVector[i][j]->euler(timeT[i], deltaT, 30 * cos((2 * 3.14 / 8) * j), 100, 30 * sin((2 * 3.14 / 8) * j));
 				}
 			}
 			// Continue
@@ -539,7 +894,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 					GameObjects.push_back((GameObject*)ProfessorPool[i]);
 				}
 				ProfessorPool[i]->bActivated = true;
-				ProfessorPool[i]->SetInitialPosition(-2,  -10.f);
+				ProfessorPool[i]->SetInitialPositionByIndex(Line::Left);
 				break;
 			}
 		}
@@ -556,7 +911,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 					GameObjects.push_back((GameObject*)GirlFriendPool[i]);
 				}
 				GirlFriendPool[i]->bActivated = true;
-				GirlFriendPool[i]->SetInitialPosition(-2, -10.f);
+				GirlFriendPool[i]->SetInitialPositionByIndex(Line::Middle);
 				break;
 			}
 		}
@@ -572,7 +927,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 					GameObjects.push_back((GameObject*)BookPool[i]);
 				}
 				BookPool[i]->bActivated = true;
-				BookPool[i]->SetInitialPosition(-2, -10.f);
+				BookPool[i]->SetInitialPositionByIndex(Line::Right);
 				BookPool[i]->SetAnimInit();
 				break;
 			}
@@ -589,7 +944,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 					GameObjects.push_back((GameObject*)GamepadPool[i]);
 				}
 				GamepadPool[i]->bActivated = true;
-				GamepadPool[i]->SetInitialPosition(-2, -10.f);
+				GamepadPool[i]->SetInitialPositionByIndex(Line::Left);
 				GamepadPool[i]->SetAnimInit();
 				break;
 			}
@@ -606,7 +961,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 					GameObjects.push_back((GameObject*)CalculatorPool[i]);
 				}
 				CalculatorPool[i]->bActivated = true;
-				CalculatorPool[i]->SetInitialPosition(-2, -10.f);
+				CalculatorPool[i]->SetInitialPositionByIndex(Line::Middle);
 				CalculatorPool[i]->SetAnimInit();
 				break;
 			}
@@ -623,7 +978,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 					GameObjects.push_back((GameObject*)BeerPool[i]);
 				}
 				BeerPool[i]->bActivated = true;
-				BeerPool[i]->SetInitialPosition(-2, -10.f);
+				BeerPool[i]->SetInitialPositionByIndex(Line::Right);
 				BeerPool[i]->SetAnimInit();
 				break;
 			}

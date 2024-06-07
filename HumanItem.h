@@ -10,13 +10,14 @@ public:
 	Animator* _animator;
 	glm::vec3 Scale;
 
-	HumanItem(const string& modelPath, int lineIndex, int score, glm::vec3 Scale)
+	HumanItem(const string& modelPath, int lineIndex, int score, glm::vec3 Scale, bool itemType)
 	{
 		SetModel(modelPath);
 		this->lineIndex = lineIndex;
 		this->score = score;
 		this->bIsItem = true;
 		this->Scale = Scale;
+		this->itemType = itemType;
 	}
 
 	~HumanItem()
@@ -50,13 +51,14 @@ public:
 		_animator->UpdateAnimation(deltaTime);
 	}
 
-	virtual void Render(const glm::mat4& projection, const glm::mat4& view)
+	virtual void Render(const glm::mat4& projection, const glm::mat4& view, const glm::vec3& direction, const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& cameraPos) override
 	{
 		
 		if (_shader == nullptr) return;
 		_shader->use();
 		_shader->setMat4("projection", projection);
 		_shader->setMat4("view", view);
+		SetUniformVar(direction, ambient, diffuse, specular, cameraPos);
 
 		auto transforms = (*_animator).GetFinalBoneMatrices();
 		for (int i = 0; i < transforms.size(); ++i)

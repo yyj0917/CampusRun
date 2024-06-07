@@ -7,6 +7,7 @@ protected:
 	
 	int score;
 	int lineIndex;
+	bool itemType; // 0 : negative 1 : positive
 	float moveSpeed = 5.f;
 	float xBoundVolume = 0.5f;
 	float yBoundVolume = 0.5f;
@@ -16,6 +17,12 @@ public:
 
 	int GetLineIndex() { return lineIndex; }
 
+	bool getItemType() { return itemType; }
+
+	void setItemType(bool itemType) {
+		this->itemType = itemType;
+	}
+
 	void SetCollisionBound(float xVolume, float yVolume, float zVolume)
 	{
 		xBoundVolume = xVolume;
@@ -23,6 +30,13 @@ public:
 		zBoundVolume = zVolume;
 	}
 
+	void SetInitialPositionByIndex(int index)
+	{
+		lineIndex = index;
+		SetInitialPosition(-2.f + 2.f * index, -10);
+	}
+
+	// Set Spawn Position, initialPosX must in {-2, 0, 2}
 	void SetInitialPosition(float initialPosX, float initialPosZ)
 	{
 		_transform->setLocalPosition(glm::vec3(
@@ -30,6 +44,8 @@ public:
 			0.f,
 			initialPosZ)
 		);
+
+
 	}
 
 	virtual void CollisionEvent()
@@ -55,6 +71,7 @@ public:
 
 	void SetScore(int score)
 	{
+		
 		this->score = score;
 	}
 

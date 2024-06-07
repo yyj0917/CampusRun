@@ -34,6 +34,18 @@ public:
 		_model = new Model(modelPath);
 	}
 
+	void SetUniformVar(const glm::vec3& direction, const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& cameraPos)
+	{
+		if (_shader != nullptr)
+		{
+			_shader->setVec3("viewPos", cameraPos);
+			_shader->setVec3("light.direction", direction);
+			_shader->setVec3("light.ambient", ambient);
+			_shader->setVec3("light.diffuse", diffuse);
+			_shader->setVec3("light.specular", specular);
+		}
+	}
+
 	void SetShader(const string& vs, const string& fs)
 	{
 		_shader = new Shader(vs.c_str(), fs.c_str());
@@ -49,7 +61,7 @@ public:
 
 	}
 
-	virtual void Render(const glm::mat4& projection,const glm::mat4& view)
+	virtual void Render(const glm::mat4& projection,const glm::mat4& view, const glm::vec3& direction, const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& cameraPos)
 	{
 		if (_shader == nullptr) return;
 		_shader->use();
