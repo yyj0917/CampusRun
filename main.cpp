@@ -72,9 +72,6 @@ GameInfo* gameInfo;
 // Line Position
 enum Line { Left, Middle, Right };
 
-// Line Position
-enum Line {Left, Middle, Right};
-
 // Eat Particles
 vector<vector<Mass*>> ParticleVector;
 float initialParticlePosY = 0.f;
@@ -119,6 +116,11 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
+// Game Logic
+bool isPlayingGame = false;
+int totalAmount = 0;
+int maxTotal = 20;
+
 // Input Models
 Player* player;
 string human_vs = sourceDirStr + "/human.vs";
@@ -146,6 +148,8 @@ float lastSpawnTime = 0.0f;
 int main()
 {
 	gameInfo = new GameInfo();
+	cout << "자신만의 대학생활을 즐겨보세요\n";
+	cout << "G키를 누르면 시작합니다\n";
 
 	float skyboxVertices[] = {
 		// positions          //back
@@ -256,7 +260,7 @@ int main()
 		camera.Position = CameraPosition;
 		camera.Front = CameraTargetPosition - CameraPosition;
 
-		if (currentFrame - lastSpawnTime >= 1.0f) {
+		if (currentFrame - lastSpawnTime >= 1.0f && isPlayingGame) {
 			spawnRandomItems();
 			lastSpawnTime = currentFrame;
 		}
@@ -290,8 +294,27 @@ int main()
 					item->CollisionEvent();
 					item->SetInitialPosition(-2.f + particlePosXOffset * item->GetLineIndex(), -10);
 					gameInfo->setScore(item);
-					printf("Negative Score : %d\n", gameInfo->getNegScore());
-					printf("Positive Score : %d\n", gameInfo->getPosScore());
+					printf("놀기 : % d\n", gameInfo->getNegScore());
+					printf("공부하기 : %d\n", gameInfo->getPosScore());
+					cout << "\n\n\n";
+
+					totalAmount++;
+					if (totalAmount == maxTotal)
+					{
+						isPlayingGame = false;
+						if (gameInfo->getNegScore() > gameInfo->getPosScore())
+						{
+							cout << "열심히 놀았습니다!" << "\n";
+						}
+						else if (gameInfo->getNegScore() < gameInfo->getPosScore())
+						{
+							cout << "교수님의 총애를 받았습니다!" << "\n";
+						}
+						else
+						{
+							cout << "대학생활을 즐기지 못했습니다" << "\n";
+						}
+					}
 				}
 				// 
 				else if (item->_transform->getLocalPosition().z >= 3)
@@ -586,14 +609,14 @@ void ModelLoading()
 	// Preload Professor and Girlfriend
 	for (int i = 0; i < 3; i++)
 	{
-		HumanItem* newHuman = new HumanItem(professorModelPath, 0, ScoreOfItem[ItemType::Professor], glm::vec3(0.8f, 0.8f, 0.8f), false);
+		HumanItem* newHuman = new HumanItem(professorModelPath, 0, ScoreOfItem[ItemType::Professor], glm::vec3(0.8f, 0.8f, 0.8f), true);
 		newHuman->SetInitialPosition(-2, -10);
 		newHuman->SetShader(human_vs, human_fs);
 		newHuman->bActivated = false;
 		newHuman->SetCollisionBound(.5f, 2.f, .5f);
 		ProfessorPool.push_back(newHuman);
 
-		HumanItem* newHuman2 = new HumanItem(girlfiendModelPath, 0, ScoreOfItem[ItemType::GirlFriend], glm::vec3(0.8f, 0.8f, 0.8f), true);
+		HumanItem* newHuman2 = new HumanItem(girlfiendModelPath, 0, ScoreOfItem[ItemType::GirlFriend], glm::vec3(0.8f, 0.8f, 0.8f), false);
 		newHuman2->SetInitialPosition(-2, -10);
 		newHuman2->SetShader(human_vs, human_fs);
 		newHuman2->bActivated = false;
@@ -885,108 +908,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		CameraPosition -= CameraOffset;
 	}
 
-	// Human Item Animation Test
-	if (key == GLFW_KEY_1 && action == GLFW_PRESS)
+	if (key == GLFW_KEY_G && action == GLFW_PRESS)
 	{
-		for (int i = 0; i < ProfessorPool.size(); i++)
-		{
-			if (ProfessorPool[i]->bActivated == false)
-			{
-				if (!(find(GameObjects.begin(), GameObjects.end(), ProfessorPool[i]) != GameObjects.end()))
-				{
-					GameObjects.push_back((GameObject*)ProfessorPool[i]);
-				}
-				ProfessorPool[i]->bActivated = true;
-				ProfessorPool[i]->SetInitialPositionByIndex(Line::Left);
-				break;
-			}
-		}
+		if (isPlayingGame) return;
+
+		isPlayingGame = true;
+		totalAmount = 0;
 	}
 
-	if (key == GLFW_KEY_2 && action == GLFW_PRESS)
-	{
-		for (int i = 0; i < GirlFriendPool.size(); i++)
-		{
-			if (GirlFriendPool[i]->bActivated == false)
-			{
-				if (!(find(GameObjects.begin(), GameObjects.end(), GirlFriendPool[i]) != GameObjects.end()))
-				{
-					GameObjects.push_back((GameObject*)GirlFriendPool[i]);
-				}
-				GirlFriendPool[i]->bActivated = true;
-				GirlFriendPool[i]->SetInitialPositionByIndex(Line::Middle);
-				break;
-			}
-		}
-	}
-	if (key == GLFW_KEY_3 && action == GLFW_PRESS)
-	{
-		for (int i = 0; i < BookPool.size(); i++)
-		{
-			if (BookPool[i]->bActivated == false)
-			{
-				if (!(find(GameObjects.begin(), GameObjects.end(), BookPool[i]) != GameObjects.end()))
-				{
-					GameObjects.push_back((GameObject*)BookPool[i]);
-				}
-				BookPool[i]->bActivated = true;
-				BookPool[i]->SetInitialPositionByIndex(Line::Right);
-				BookPool[i]->SetAnimInit();
-				break;
-			}
-		}
-	}
-	if (key == GLFW_KEY_4 && action == GLFW_PRESS)
-	{
-		for (int i = 0; i < GamepadPool.size(); i++)
-		{
-			if (GamepadPool[i]->bActivated == false)
-			{
-				if (!(find(GameObjects.begin(), GameObjects.end(), GamepadPool[i]) != GameObjects.end()))
-				{
-					GameObjects.push_back((GameObject*)GamepadPool[i]);
-				}
-				GamepadPool[i]->bActivated = true;
-				GamepadPool[i]->SetInitialPositionByIndex(Line::Left);
-				GamepadPool[i]->SetAnimInit();
-				break;
-			}
-		}
-	}
-	if (key == GLFW_KEY_5 && action == GLFW_PRESS)
-	{
-		for (int i = 0; i < CalculatorPool.size(); i++)
-		{
-			if (CalculatorPool[i]->bActivated == false)
-			{
-				if (!(find(GameObjects.begin(), GameObjects.end(), CalculatorPool[i]) != GameObjects.end()))
-				{
-					GameObjects.push_back((GameObject*)CalculatorPool[i]);
-				}
-				CalculatorPool[i]->bActivated = true;
-				CalculatorPool[i]->SetInitialPositionByIndex(Line::Middle);
-				CalculatorPool[i]->SetAnimInit();
-				break;
-			}
-		}
-	}
-	if (key == GLFW_KEY_6 && action == GLFW_PRESS)
-	{
-		for (int i = 0; i < BeerPool.size(); i++)
-		{
-			if (BeerPool[i]->bActivated == false)
-			{
-				if (!(find(GameObjects.begin(), GameObjects.end(), BeerPool[i]) != GameObjects.end()))
-				{
-					GameObjects.push_back((GameObject*)BeerPool[i]);
-				}
-				BeerPool[i]->bActivated = true;
-				BeerPool[i]->SetInitialPositionByIndex(Line::Right);
-				BeerPool[i]->SetAnimInit();
-				break;
-			}
-		}
-	}
 }
 
 void PlayParticleAtIndex(int index)

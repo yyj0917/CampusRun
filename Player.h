@@ -48,8 +48,6 @@ public:
 			if (PlayerToMove == -HowMuchMove) return;
 			if (!bCanMove) return;
 
-			// Todo: Insert Sound
-			cout << "Log: Player Move Sound Play" << endl;
 
 			PlayerToMove -= HowMuchMove;
 		}
@@ -60,8 +58,6 @@ public:
 			if (PlayerToMove == HowMuchMove) return;
 			if (!bCanMove) return;
 
-			// Todo: Insert Sound
-			cout << "Log: Player Move Sound Play" << endl;
 
 			PlayerToMove += HowMuchMove;
 		}
@@ -70,8 +66,6 @@ public:
 		{
 			if (!bCanJump) return;
 
-			// Todo: Insert Sound
-			cout << "Log: Player Move Sound Play" << endl;
 
 			CurrentVerticalSpeed = JumpForce;
 			bCanJump = false;
